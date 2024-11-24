@@ -1,71 +1,168 @@
-# fireship-extension-demo README
+Want to join the 40,000+ extensions in the VS Code marketplace? Let's build a completely useless (but educational) extension in the next few minutes.
+ 
 
-This is the README for your extension "fireship-extension-demo". After writing up a brief description, we recommend including the following sections.
+## What are we building? 
+A VS Code extension that replaces the word "fireship" with a fire emoji (🔥) as you type. Is it practical? No. Will it teach you the fundamentals of VS Code extension development? Absolutely.
 
-## Features
+  
+## Project Setup
+First, you'll need to set up your development environment. Use your favorite package manager to install the VS Code Extension Generator:
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+  
+```bash
+# Using pnpm
+pnpm i --global yo generator-code
 
-For example if there is an image subfolder under your extension project workspace:
+# Or using npx for one-time use
+pnpm dlx --package yo --package generator-code -- yo code
+```
 
-\!\[feature X\]\(images/feature-x.png\)
 
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+## Your First Extension - Hi Mom!
+The generator creates a basic "Hello World" extension. Let's modify it to say hi to our moms instead (because every programmer's first duty is to make their mother proud).
 
-## Requirements
+```typescript
+import * as vscode from 'vscode'
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+export function activate(context: vscode.ExtensionContext) {
+	let disposable = vscode.commands.registerCommand('yourExtension.hiMom', () => {
+		vscode.window.showInformationMessage('Hi Mom! 👋')
+	})
+	
+	context.subscriptions.push(disposable)
+}
+```
 
-## Extension Settings
+Don't forget to update your `package.json`:
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
+```json
+{
+  "contributes": {
+      "commands": [{
+          "command": "yourExtension.hiMom",
+          "title": "Hi Mom!"
+      }]
+  }
+}
+```
 
-For example:
+Test it out:
+1. Press F5 to launch the Extension Development Host
+2. Open the Command Palette (Cmd+Shift+P / Ctrl+Shift+P)
+3. Type "Hi Mom"
+4. Watch your touching message appear!
 
-This extension contributes the following settings:
 
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
+## Building the Fireship Replacer
+Now let's build something more interesting. Here's our extension that replaces "fireship" with 🔥:
+```typescript
+import * as vscode from 'vscode';
 
-## Known Issues
+export function activate(context: vscode.ExtensionContext) {
+    // Create a disposable for our text change listener
+    let disposable = vscode.workspace.onDidChangeTextDocument((event) => {
+        const editor = vscode.window.activeTextEditor;
+        if (!editor || event.document !== editor.document) {
+            return;
+        }
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+        const changes = event.contentChanges;
+        if (changes.length === 0) return;
 
-## Release Notes
+        // Look at the first change
+        const change = changes[0];
+        
+        // Find matches of "fireship" in the changed text
+        const matches = [...change.text.matchAll(/fireship/g)];
+        
+        if (matches.length > 0) {
+            // Get the last match (most recently typed)
+            const lastMatch = matches[matches.length - 1];
+            
+            // Create position objects for the replacement
+            const startPos = new vscode.Position(
+                change.range.start.line,
+                lastMatch.index!
+            );
+            const endPos = new vscode.Position(
+                change.range.start.line,
+                lastMatch.index! + 'fireship'.length
+            );
 
-Users appreciate release notes as you update your extension.
+            // Replace the text
+            editor.edit(editBuilder => {
+                editBuilder.replace(new vscode.Range(startPos, endPos), '🔥');
+            });
+        }
+    });
 
-### 1.0.0
+    context.subscriptions.push(disposable);
+}
+```
 
-Initial release of ...
+Update your `package.json` to activate the extension for specific languages:
+```json
+{
+    "activationEvents": [
+        "onLanguage:javascript",
+        "onLanguage:typescript"
+    ]
+}
+```
 
-### 1.0.1
 
-Fixed issue #.
+## Publishing to the Marketplace
+Ready to share your creation with the world? Here's how:
+1. Create a Microsoft account and Azure organization (free) at dev.azure.com
+2. Install the VS Code Extension CLI:
+```bash
+npm install -g @vscode/vsce
+```
 
-### 1.1.0
+3. Update your `package.json` with required fields:
+```json
+{
+    "publisher": "your-publisher-name",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/username/repo.git"
+    },
+    "icon": "icon.png",
+    "version": "0.0.1"
+}
+```
 
-Added features X, Y, and Z.
+4. Create a Personal Access Token (PAT) in Azure DevOps with Marketplace (publish) scope
+5. Package and publish by running:
+```bash
+vsce package
+vsce publish
+```
+
+
+## Practical Applications
+While our emoji replacer might not change the world, you can use these same concepts to build actually useful extensions:
+- Auto-format team commit messages
+- Convert between different code syntaxes on the fly
+- Add custom diagnostic warnings for your codebase
+- Create snippets for your framework/library
+- Add custom UI elements to VS Code
+
+
+## Resources
+- [VS Code Extension API Documentation](https://code.visualstudio.com/api)
+- [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
+- [Publishing Extensions](https://code.visualstudio.com/api/working-with-extensions/publishing-extension)
+
+  
+## Conclusion
+Now you're ready to contribute to the VS Code extension ecosystem. Whether you build something useful or just add to the chaos is entirely up to you. I'm not your developer advocate!
+Remember: with great power comes great responsibility... or whatever.
 
 ---
 
-## Following extension guidelines
 
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
-
-* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
-
-## Working with Markdown
-
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
-
-## For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
-
-**Enjoy!**
+Like this content? Follow me here:
+- [YouTube](https://youtube.com/c/fireship)
+- [Twitter](https://twitter.com/fireship_dev)
+- [GitHub](https://github.com/fireship-io)
